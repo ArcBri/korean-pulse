@@ -1,24 +1,22 @@
-# Hourly Web Push cron for Hangul Hour (free-tier alternative to Vercel Hobby cron).
+# Hourly Web Push trigger for Hangul Hour.
 #
-# Cron expressions are ALWAYS in UTC (not the learner's local timezone).
-# Local study hours are applied inside /api/push/cron using each subscription's timeZone.
+# PRIMARY SCHEDULER: use an external free cron (cron-job.org) hitting
+#   https://www.hangul-hour.app/api/push/cron
+# GitHub Actions `schedule` has not been firing for this repo (only
+# workflow_dispatch works). Keep this workflow for manual "Run workflow"
+# backups and in case GitHub schedules start working later.
 #
-# GitHub Actions schedule quirks:
-# - New workflows can take a while before the first schedule fires
-# - Runs are often delayed 5–15+ minutes past the cron minute (sometimes longer)
-# - Schedules only run from the default branch (main)
-# - Repo Actions secrets are required (same secrets as workflow_dispatch)
+# Cron expressions here are UTC. Local study hours are applied in the API.
 #
-# Required repo secrets:
-#   HANGUL_HOUR_CRON_URL  — e.g. https://www.hangul-hour.app/api/push/cron
+# Required repo secrets (for this workflow only):
+#   HANGUL_HOUR_CRON_URL  — https://www.hangul-hour.app/api/push/cron
 #   CRON_SECRET           — same value as the Vercel CRON_SECRET env var
 
 name: Hourly Web Push
 
 on:
   schedule:
-    # Fire several times each UTC hour. /api/push/cron dedupes via lastNotifiedSlot,
-    # so extra runs are safe and compensate for GitHub schedule delay/skips.
+    # Kept as a best-effort backup. Prefer cron-job.org — see docs/web-push-setup.
     - cron: "0,15,30,45 * * * *"
   workflow_dispatch:
 
