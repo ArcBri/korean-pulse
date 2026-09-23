@@ -125,15 +125,28 @@ export async function subscribeToWebPush(options: {
 
   await navigator.serviceWorker.ready;
 
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(
-        config.publicKey,
-      ) as BufferSource,
-    });
+  // Always create a fresh subscription with the current VAPID public key.
+  // Reusing a stale PushSubscription (old key / prior enable) causes Apple 403.
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) {
+    try {
+      await fetch("/api/push/unsubscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      });
+    } catch {
+      // Continue; local unsubscribe still clears the browser subscription.
+    }
+    await existing.unsubscribe().catch(() => undefined);
   }
+
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(
+      config.publicKey,
+    ) as BufferSource,
+  });
 
   const response = await fetch("/api/push/subscribe", {
     method: "POST",

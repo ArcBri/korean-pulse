@@ -11,6 +11,7 @@ import {
   requestNotificationPermission,
   showWordNotification,
   subscribeToWebPush,
+  syncWebPushSchedule,
   unsubscribeFromWebPush,
 } from "@/lib/notifications";
 import {
@@ -59,6 +60,15 @@ export function NotificationManager({
     void syncSchedule();
 
     async function syncSchedule() {
+      const ok = await syncWebPushSchedule({
+        startHour: settings.startHour,
+        endHour: settings.endHour,
+      });
+      if (ok) {
+        setPushActive(true);
+        return;
+      }
+      // No browser subscription yet — create one with the current VAPID key.
       const result = await subscribeToWebPush({
         startHour: settings.startHour,
         endHour: settings.endHour,
