@@ -6,6 +6,7 @@ import { TodayQueue } from "@/components/today-queue";
 import { Progress } from "@/components/ui/progress";
 import { useLearner } from "@/components/learner-provider";
 import { formatHourLabel } from "@/lib/schedule";
+import { getVocabularyById } from "@/lib/vocabulary";
 
 function formatCountdown(target: Date | null, now: Date): string {
   if (!target) return "No upcoming slot";
@@ -48,6 +49,16 @@ export default function HomePage() {
     totalSlots === 0
       ? 0
       : Math.min(100, Math.round((reviewedTodayCount / totalSlots) * 100));
+
+  const previewSlot =
+    !currentSlot && state.dailyPlan
+      ? state.dailyPlan.slots.find((slot) =>
+          nextSlotAt ? slot.hour === nextSlotAt.getHours() : true,
+        ) ?? state.dailyPlan.slots[0]
+      : null;
+  const previewWord = previewSlot
+    ? getVocabularyById(previewSlot.wordId)
+    : null;
 
   return (
     <AppShell>
@@ -94,26 +105,31 @@ export default function HomePage() {
           className="mb-10"
         />
       ) : (
-        <div className="mb-10 rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)]/70 p-8">
-          <h2 className="font-display text-2xl text-[color:var(--ink)]">
-            Outside the study window
-          </h2>
-          <p className="mt-2 max-w-xl text-[color:var(--muted)]">
-            Your next word arrives at{" "}
-            {nextSlotAt
-              ? nextSlotAt.toLocaleString(undefined, {
-                  weekday: "short",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
-              : "the next configured hour"}
-            . Browse the library anytime, or open Settings to change the window.
-          </p>
-          {currentHour !== null && state.dailyPlan ? (
-            <p className="mt-4 text-sm text-[color:var(--accent)]">
-              Tip: if you already reviewed today&apos;s slots, new mixes appear
-              tomorrow with due repeats prioritized.
+        <div className="mb-10 space-y-4">
+          <div className="rounded-2xl border border-dashed border-[color:var(--line)] bg-[color:var(--surface)]/70 p-8">
+            <h2 className="font-display text-2xl text-[color:var(--ink)]">
+              Outside the study window
+            </h2>
+            <p className="mt-2 max-w-xl text-[color:var(--muted)]">
+              Your next word arrives at{" "}
+              {nextSlotAt
+                ? nextSlotAt.toLocaleString(undefined, {
+                    weekday: "short",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })
+                : "the next configured hour"}
+              . You can preview it below, browse the library, or widen the window
+              in Settings.
             </p>
+          </div>
+          {previewWord && previewSlot ? (
+            <WordCard
+              word={previewWord}
+              slotLabel={`Up next · ${previewSlot.label}`}
+              showActions
+              onRate={(rating) => rateCurrentWord(previewWord.id, rating)}
+            />
           ) : null}
         </div>
       )}
