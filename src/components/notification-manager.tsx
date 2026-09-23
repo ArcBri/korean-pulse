@@ -82,8 +82,8 @@ export function NotificationManager({
       onEnabledChange(false);
       setStatus(
         next === "denied"
-          ? "Permission denied. You can still use the in-app hourly dashboard."
-          : "Permission was not granted.",
+          ? "Blocked by the browser. You can still study from the Today tab."
+          : "Permission wasn’t granted.",
       );
       return;
     }
@@ -107,7 +107,7 @@ export function NotificationManager({
     } else {
       setPushActive(false);
       setStatus(
-        "Hourly reminders enabled while this app stays open. Add VAPID + Upstash Redis env vars for background Web Push.",
+        "Notifications on while Hangul Hour stays open or installed. Add VAPID + Upstash Redis env vars for background Web Push.",
       );
     }
 
@@ -129,7 +129,7 @@ export function NotificationManager({
     await unsubscribeFromWebPush();
     setPushActive(false);
     onEnabledChange(false);
-    setStatus("Notifications turned off. The in-app queue still updates hourly.");
+    setStatus("Notifications off. Today still updates on the hour.");
   };
 
   return (
@@ -151,7 +151,7 @@ export function NotificationManager({
           <p className="mt-1 text-sm text-[color:var(--muted)]">
             {pushConfigured
               ? "Background Web Push sends a generic reminder each study hour, even when the app is closed. On iPhone, add Hangul Hour to your Home Screen first."
-              : "Without server push configured, browser notifications work best while Hangul Hour stays open. The dashboard remains the source of truth."}
+              : "Works best while the app is open or added to your home screen. Phones often quiet background alerts — Today is always up to date."}
           </p>
           {pushConfigured ? (
             <p className="mt-2 text-xs text-[color:var(--muted)]">

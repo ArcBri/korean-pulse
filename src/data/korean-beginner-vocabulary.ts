@@ -38,11 +38,41 @@ export const TOPIC_LABELS: Record<Topic, string> = {
   food: "Food",
   places: "Places",
   transport: "Transport",
-  verbs: "Verbs",
-  adjectives: "Adjectives",
+  verbs: "Verb",
+  adjectives: "Adjective",
   numbers: "Numbers",
   phrases: "Phrases",
 };
+
+export const PART_OF_SPEECH_LABELS: Record<PartOfSpeech, string> = {
+  noun: "Noun",
+  verb: "Verb",
+  adjective: "Adjective",
+  adverb: "Adverb",
+  particle: "Particle",
+  phrase: "Phrase",
+  number: "Number",
+};
+
+/** Topics that already name the part of speech — avoid duplicate badges. */
+const TOPIC_IMPLIES_POS: Partial<Record<Topic, PartOfSpeech>> = {
+  verbs: "verb",
+  adjectives: "adjective",
+  numbers: "number",
+  phrases: "phrase",
+};
+
+/** Unique category tags for a word card / library row. */
+export function getEntryTags(entry: VocabularyEntry): string[] {
+  const tags = [TOPIC_LABELS[entry.topic]];
+  const implied = TOPIC_IMPLIES_POS[entry.topic];
+  if (implied && implied === entry.partOfSpeech) {
+    return tags;
+  }
+  const pos = PART_OF_SPEECH_LABELS[entry.partOfSpeech];
+  if (pos !== tags[0]) tags.push(pos);
+  return tags;
+}
 
 export const BEGINNER_VOCABULARY: VocabularyEntry[] = [
   {

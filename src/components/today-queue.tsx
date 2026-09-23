@@ -18,8 +18,7 @@ export function TodayQueue({
   if (!plan || plan.slots.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[color:var(--line)] p-6 text-sm text-[color:var(--muted)]">
-        No hourly slots are configured for today. Adjust your schedule in
-        Settings.
+        No hours set for today. Pick a start and end in Settings.
       </div>
     );
   }
@@ -34,7 +33,7 @@ export function TodayQueue({
             Today&apos;s queue
           </h2>
           <p className="text-sm text-[color:var(--muted)]">
-            One practical word each hour, with reviews mixed in.
+            This hour’s word plus anything due for a quick review.
           </p>
         </div>
       </div>

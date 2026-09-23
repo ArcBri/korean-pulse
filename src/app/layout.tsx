@@ -22,7 +22,7 @@ const hangul = Noto_Sans_KR({
 export const metadata: Metadata = {
   title: "Hangul Hour",
   description:
-    "Learn practical Korean vocabulary every hour from 9 AM to 5 PM with Hangul, pronunciation, and spaced review.",
+    "One Korean word an hour — Hangul, how to say it, and a quick review so it sticks.",
   applicationName: "Hangul Hour",
   manifest: "/manifest.webmanifest",
   icons: {
