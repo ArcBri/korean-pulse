@@ -22,10 +22,26 @@ npm run dev
 
 Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
-### Feedback email
+### Feedback email (Resend)
 
-Settings includes a Feedback form that opens the learner’s mail app via `mailto:`.  
-Default inbox: `tarantadonatarantula@gmail.com`. Override with `NEXT_PUBLIC_FEEDBACK_EMAIL` (see `.env.example`).
+Settings includes a Feedback form (max **2 messages per local calendar day** per app instance). The client stores an instance id + daily counter in `localStorage`; the API re-enforces the same cap by instance id and IP hash.
+
+- **With Resend configured** (`RESEND_API_KEY`): messages send in-app to `NEXT_PUBLIC_FEEDBACK_EMAIL` / `FEEDBACK_TO_EMAIL` (default `tarantadonatarantula@gmail.com`).
+- **Without Resend**: the form falls back to opening the learner’s mail app (`mailto:`), and `/api/feedback` returns `503` with a clear setup message.
+
+#### Brian: one-time Resend dashboard setup
+
+1. Create a [Resend](https://resend.com) account and an **API key** (Dashboard → API Keys).
+2. Add the secret locally / on the host (never commit it):
+   - `RESEND_API_KEY=re_...`
+   - Optional: `FEEDBACK_FROM_EMAIL=Hangul Hour <feedback@yourdomain.com>`
+   - Optional: `NEXT_PUBLIC_FEEDBACK_EMAIL` / `FEEDBACK_TO_EMAIL` if the inbox should differ from the default.
+3. **From address**
+   - Quick test: leave `FEEDBACK_FROM_EMAIL` as `Hangul Hour <onboarding@resend.dev>` — Resend only delivers to the email on your Resend account.
+   - Production: Domains → add & verify your domain (DNS), then set `FEEDBACK_FROM_EMAIL` to an address on that domain (e.g. `Hangul Hour <feedback@yourdomain.com>`).
+4. Restart the Next.js server after setting env vars.
+
+See `.env.example` for the full template.
 
 Production:
 
@@ -59,7 +75,7 @@ vercel --prod
 3. Leave the defaults (Framework: Next.js, Build: `next build`, Output: automatic).
 4. Deploy.
 
-No environment variables are required. Progress stays in each learner’s browser `localStorage`.
+Learner progress stays in browser `localStorage`. For in-app Feedback email on Vercel, add `RESEND_API_KEY` and `FEEDBACK_FROM_EMAIL` (plus optional destination overrides) in the project Environment Variables.
 
 ## How the schedule works
 
