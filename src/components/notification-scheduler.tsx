@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLearner } from "@/components/learner-provider";
 import {
   computeDelayToNextHourBoundary,
+  hasActiveWebPushSubscription,
   registerServiceWorker,
   showWordNotification,
 } from "@/lib/notifications";
@@ -13,6 +14,7 @@ import { getVocabularyById } from "@/lib/vocabulary";
 export function NotificationScheduler() {
   const { hydrated, state } = useLearner();
   const notifiedRef = useRef(new Set<string>());
+  const [useLocalFallback, setUseLocalFallback] = useState(true);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -20,7 +22,24 @@ export function NotificationScheduler() {
   }, [hydrated]);
 
   useEffect(() => {
-    if (!hydrated || !state?.settings.notificationsEnabled || !state.dailyPlan) {
+    if (!hydrated || !state?.settings.notificationsEnabled) return;
+    let cancelled = false;
+    void (async () => {
+      const activePush = await hasActiveWebPushSubscription();
+      if (!cancelled) setUseLocalFallback(!activePush);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, state?.settings.notificationsEnabled, state?.settings.startHour, state?.settings.endHour]);
+
+  useEffect(() => {
+    if (
+      !hydrated ||
+      !state?.settings.notificationsEnabled ||
+      !state.dailyPlan ||
+      !useLocalFallback
+    ) {
       return;
     }
 
@@ -65,7 +84,7 @@ export function NotificationScheduler() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [hydrated, state]);
+  }, [hydrated, state, useLocalFallback]);
 
   return null;
 }

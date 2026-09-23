@@ -1,0 +1,30 @@
+# Hourly Web Push cron for Hangul Hour (free-tier alternative to Vercel Hobby cron).
+# Required repo secrets:
+#   HANGUL_HOUR_CRON_URL  — e.g. https://your-app.vercel.app/api/push/cron
+#   CRON_SECRET           — same value as the Vercel CRON_SECRET env var
+
+name: Hourly Web Push
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger push cron
+        env:
+          HANGUL_HOUR_CRON_URL: ${{ secrets.HANGUL_HOUR_CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$HANGUL_HOUR_CRON_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing HANGUL_HOUR_CRON_URL or CRON_SECRET secrets; skipping."
+            exit 0
+          fi
+          curl --fail --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            "$HANGUL_HOUR_CRON_URL"
