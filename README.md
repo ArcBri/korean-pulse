@@ -35,6 +35,27 @@ Tests:
 npm test
 ```
 
+## Deploy to Vercel
+
+This is a standard Next.js app and deploys cleanly on Vercel.
+
+### Option A — Vercel CLI
+
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
+### Option B — Import the Git repo
+
+1. Push this project to GitHub/GitLab/Bitbucket (or use **Create repo** in Cursor if you have not yet).
+2. Open [vercel.com/new](https://vercel.com/new) and import the repository.
+3. Leave the defaults (Framework: Next.js, Build: `next build`, Output: automatic).
+4. Deploy.
+
+No environment variables are required. Progress stays in each learner’s browser `localStorage`.
+
 ## How the schedule works
 
 1. At the start of each local day, Hangul Hour builds a queue for every hour from your start hour through your end hour (default 9–17).
