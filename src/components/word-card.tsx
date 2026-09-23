@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getEntryTags, type VocabularyEntry } from "@/lib/vocabulary";
+import { hangulPronunciationGuide } from "@/lib/pronunciation";
 import type { ReviewRating, WordProgress } from "@/lib/review";
 import { cn } from "@/lib/utils";
 
@@ -93,6 +94,9 @@ export function WordCard({
         {word.hangul}
       </p>
       <p className="mt-3 font-display text-2xl text-[color:var(--accent)] sm:text-3xl">
+        {hangulPronunciationGuide(word.hangul)}
+      </p>
+      <p className="mt-1 text-sm text-[color:var(--muted)]">
         {word.romanization}
       </p>
       <p className="mt-2 text-lg text-[color:var(--muted)]">{word.meaning}</p>
@@ -105,8 +109,11 @@ export function WordCard({
           <p className="mt-2 font-hangul text-xl text-[color:var(--ink)]">
             {word.exampleHangul}
           </p>
+          <p className="mt-1 text-sm text-[color:var(--accent)]">
+            {hangulPronunciationGuide(word.exampleHangul)}
+          </p>
           {word.exampleRomanization ? (
-            <p className="mt-1 text-sm text-[color:var(--accent)]">
+            <p className="mt-0.5 text-xs text-[color:var(--muted)]">
               {word.exampleRomanization}
             </p>
           ) : null}

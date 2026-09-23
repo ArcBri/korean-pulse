@@ -8,6 +8,7 @@ import {
   TOPIC_LABELS,
   type Topic,
 } from "@/lib/vocabulary";
+import { hangulPronunciationGuide } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 
 const TOPICS: Array<Topic | "all"> = [
@@ -86,9 +87,14 @@ export function VocabularyBrowser() {
                 {word.hangul}
               </p>
               <p className="mt-1 text-[color:var(--accent)]">
+                {hangulPronunciationGuide(word.hangul)}
+              </p>
+              <p className="text-xs text-[color:var(--muted)]">
                 {word.romanization}
               </p>
-              <p className="text-sm text-[color:var(--muted)]">{word.meaning}</p>
+              <p className="mt-1 text-sm text-[color:var(--muted)]">
+                {word.meaning}
+              </p>
             </li>
           ))}
         </ul>
