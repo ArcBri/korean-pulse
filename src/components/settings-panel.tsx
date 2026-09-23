@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { FeedbackForm } from "@/components/feedback-form";
 import { NotificationManager } from "@/components/notification-manager";
 import type { LearnerState } from "@/lib/persistence";
 import type { ScheduleSettings } from "@/lib/schedule";
@@ -88,6 +89,8 @@ export function SettingsPanel({
           onSettingsChange({ notificationsEnabled })
         }
       />
+
+      <FeedbackForm />
 
       <section className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]/85 p-5">
         <h2 className="font-display text-xl text-[color:var(--ink)]">

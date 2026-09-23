@@ -22,6 +22,11 @@ npm run dev
 
 Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
+### Feedback email
+
+Settings includes a Feedback form that opens the learner’s mail app via `mailto:`.  
+Default inbox: `tarantadonatarantula@gmail.com`. Override with `NEXT_PUBLIC_FEEDBACK_EMAIL` (see `.env.example`).
+
 Production:
 
 ```bash
