@@ -56,31 +56,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-10">
+      <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:pt-10 md:pb-10">
         {children}
       </main>
 
-      <nav className="relative z-10 border-t border-[color:var(--line)]/70 bg-[color:var(--surface)]/90 backdrop-blur-md md:hidden">
-        <div className="mx-auto grid max-w-5xl grid-cols-3">
-          {NAV.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex flex-col items-center gap-1 px-2 py-3 text-xs",
-                  active
-                    ? "text-[color:var(--accent)]"
-                    : "text-[color:var(--muted)]",
-                )}
-              >
-                <Icon className="size-5" />
-                {label}
-              </Link>
-            );
-          })}
+      <nav
+        aria-label="Primary"
+        className="app-shell-mobile-nav fixed inset-x-0 bottom-0 z-50 md:hidden"
+      >
+        <div className="mx-auto max-w-5xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+          <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[color:var(--line)]/80 bg-[color:var(--surface)]/85 shadow-[0_-8px_32px_rgba(23,53,44,0.12)] backdrop-blur-md">
+            {NAV.map(({ href, label, icon: Icon }) => {
+              const active =
+                href === "/" ? pathname === "/" : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex flex-col items-center gap-1 px-2 py-3 text-xs transition",
+                    active
+                      ? "bg-[color:var(--accent-soft)] text-[color:var(--accent)]"
+                      : "text-[color:var(--muted)] hover:text-[color:var(--ink)]",
+                  )}
+                >
+                  <Icon className="size-5" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </nav>
     </div>
