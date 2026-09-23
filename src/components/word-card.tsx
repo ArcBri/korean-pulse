@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TOPIC_LABELS, type VocabularyEntry } from "@/lib/vocabulary";
+import { getEntryTags, type VocabularyEntry } from "@/lib/vocabulary";
 import type { ReviewRating, WordProgress } from "@/lib/review";
 import { cn } from "@/lib/utils";
 
 const RATINGS: { id: ReviewRating; label: string; hint: string }[] = [
-  { id: "again", label: "Again", hint: "Soon" },
-  { id: "hard", label: "Hard", hint: "Sooner" },
-  { id: "good", label: "Good", hint: "On track" },
-  { id: "easy", label: "Easy", hint: "Later" },
+  { id: "again", label: "Again", hint: "Forgot" },
+  { id: "hard", label: "Hard", hint: "Rough" },
+  { id: "good", label: "Good", hint: "Knew it" },
+  { id: "easy", label: "Easy", hint: "Solid" },
 ];
 
 const RATING_LABEL: Record<ReviewRating, string> = {
@@ -79,10 +79,14 @@ export function WordCard({
             {slotLabel}
           </Badge>
         ) : null}
-        <Badge variant="secondary">{TOPIC_LABELS[word.topic]}</Badge>
-        <Badge variant="outline" className="capitalize">
-          {word.partOfSpeech}
-        </Badge>
+        {getEntryTags(word).map((tag, index) => (
+          <Badge
+            key={tag}
+            variant={index === 0 ? "secondary" : "outline"}
+          >
+            {tag}
+          </Badge>
+        ))}
       </div>
 
       <p className="font-hangul text-5xl leading-none tracking-tight text-[color:var(--ink)] sm:text-6xl">
@@ -152,13 +156,12 @@ export function WordCard({
               aria-live="polite"
               className="rounded-xl border border-[color:var(--accent)]/30 bg-[color:var(--accent-soft)] px-3 py-2 text-sm text-[color:var(--accent-deep)]"
             >
-              Logged <strong>{RATING_LABEL[confirmationRating]}</strong>
-              {confirmationNext ? ` · next review ${confirmationNext}` : null}.
-              Progress is saved on this device.
+              Saved <strong>{RATING_LABEL[confirmationRating]}</strong>
+              {confirmationNext ? ` · see again ${confirmationNext}` : null}.
             </p>
           ) : (
             <p className="text-xs text-[color:var(--muted)]">
-              Rate how well you knew this word to schedule the next review.
+              How well did you know this one?
             </p>
           )}
         </div>

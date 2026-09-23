@@ -48,7 +48,7 @@ export function NotificationManager({
     if (next === "granted") {
       onEnabledChange(true);
       setStatus(
-        "Hourly notifications enabled while this app stays open or installed.",
+        "Notifications on while Hangul Hour stays open or installed.",
       );
       const hour = getCurrentSlotHour(new Date(), settings);
       const slot =
@@ -68,14 +68,14 @@ export function NotificationManager({
     onEnabledChange(false);
     setStatus(
       next === "denied"
-        ? "Permission denied. You can still use the in-app hourly dashboard."
-        : "Permission was not granted.",
+        ? "Blocked by the browser. You can still study from the Today tab."
+        : "Permission wasn’t granted.",
     );
   };
 
   const disable = () => {
     onEnabledChange(false);
-    setStatus("Notifications turned off. The in-app queue still updates hourly.");
+    setStatus("Notifications off. Today still updates on the hour.");
   };
 
   return (
@@ -95,9 +95,8 @@ export function NotificationManager({
             Hourly reminders
           </h2>
           <p className="mt-1 text-sm text-[color:var(--muted)]">
-            Browser notifications fire best while Hangul Hour is open or
-            installed as an app. The dashboard remains the source of truth if the
-            OS pauses background alerts.
+            Works best while the app is open or added to your home screen.
+            Phones often quiet background alerts — Today is always up to date.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {!enabled || permission !== "granted" ? (

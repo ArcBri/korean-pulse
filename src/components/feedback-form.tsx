@@ -89,13 +89,13 @@ export function FeedbackForm() {
   const submit = async () => {
     const trimmed = message.trim();
     if (!trimmed) {
-      setStatus("Add a short message before sending.");
+      setStatus("Write a short note first.");
       return;
     }
 
     if (limitReached) {
       setStatus(
-        `You've already sent ${FEEDBACK_DAILY_LIMIT} feedbacks today on this device. Try again tomorrow.`,
+        `That’s ${FEEDBACK_DAILY_LIMIT} for today on this device. Come back tomorrow.`,
       );
       return;
     }
@@ -133,7 +133,7 @@ export function FeedbackForm() {
         setUsage(nextUsage);
         setStatus(
           data.message ||
-            `You've reached today's limit of ${FEEDBACK_DAILY_LIMIT} feedback messages. Try again tomorrow.`,
+            `That’s ${FEEDBACK_DAILY_LIMIT} for today. Try again tomorrow.`,
         );
         return;
       }
@@ -147,7 +147,7 @@ export function FeedbackForm() {
       if (!response.ok || !data.ok) {
         setStatus(
           data.message ||
-            "Could not send right now. You can still email us with the address above.",
+            "Couldn’t send just now. You can still email us at the address above.",
         );
         return;
       }
@@ -166,17 +166,22 @@ export function FeedbackForm() {
           : remainingFeedbackToday(nextUsage);
       setStatus(
         left > 0
-          ? `Thanks — feedback sent. You can send ${left} more today.`
-          : `Thanks — feedback sent. You've used both of today's ${FEEDBACK_DAILY_LIMIT} messages.`,
+          ? `Sent. You have ${left} more today.`
+          : `Sent. That’s both of today’s ${FEEDBACK_DAILY_LIMIT} messages.`,
       );
     } catch {
-      setStatus(
-        "Network error. You can still reach us via the email link above.",
-      );
+      setStatus("Couldn’t reach the server. Email us at the address above.");
     } finally {
       setBusy(false);
     }
   };
+
+  const blurb =
+    mode === "resend"
+      ? `Send up to ${FEEDBACK_DAILY_LIMIT} notes a day from here — no mail app needed. Goes to `
+      : mode === "mailto"
+        ? `In-app email isn’t set up on this deployment yet, so Send opens your mail app. Up to ${FEEDBACK_DAILY_LIMIT} a day on this device. Destination: `
+        : `Up to ${FEEDBACK_DAILY_LIMIT} notes a day on this device. Destination: `;
 
   return (
     <section className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]/85 p-5">
@@ -189,19 +194,14 @@ export function FeedbackForm() {
             Feedback
           </h2>
           <p className="mt-1 text-sm text-[color:var(--muted)]">
-            Ideas, bugs, or vocabulary requests go to{" "}
+            {blurb}
             <a
               href={`mailto:${FEEDBACK_EMAIL}`}
               className="font-medium text-[color:var(--accent)] underline-offset-2 hover:underline"
             >
               {FEEDBACK_EMAIL}
             </a>
-            . Limit: {FEEDBACK_DAILY_LIMIT} messages per day on this device
-            {mode === "resend"
-              ? " (sent in-app)."
-              : mode === "mailto"
-                ? " — email sending isn’t configured here, so we’ll open your mail app."
-                : "."}
+            .
           </p>
 
           <div className="mt-4 space-y-3">
@@ -221,7 +221,7 @@ export function FeedbackForm() {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={4}
-                placeholder="What should we improve?"
+                placeholder="Bug, idea, or a word you want added…"
                 disabled={busy || limitReached}
                 className="w-full resize-y rounded-lg border border-[color:var(--line)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] disabled:opacity-60"
               />
@@ -236,12 +236,12 @@ export function FeedbackForm() {
                 {busy
                   ? "Sending…"
                   : mode === "resend"
-                    ? "Send feedback"
-                    : "Open email to send"}
+                    ? "Send"
+                    : "Open mail app"}
               </Button>
               <p className="text-xs text-[color:var(--muted)]">
                 {limitReached
-                  ? `Daily limit reached (${FEEDBACK_DAILY_LIMIT}/${FEEDBACK_DAILY_LIMIT})`
+                  ? `Daily limit hit (${FEEDBACK_DAILY_LIMIT}/${FEEDBACK_DAILY_LIMIT})`
                   : `${remaining} of ${FEEDBACK_DAILY_LIMIT} left today`}
               </p>
             </div>

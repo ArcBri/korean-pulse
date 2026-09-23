@@ -1,12 +1,19 @@
 import {
   BEGINNER_VOCABULARY,
+  getEntryTags,
+  PART_OF_SPEECH_LABELS,
   TOPIC_LABELS,
   type Topic,
   type VocabularyEntry,
 } from "@/data/korean-beginner-vocabulary";
 
 export type { VocabularyEntry, Topic };
-export { BEGINNER_VOCABULARY, TOPIC_LABELS };
+export {
+  BEGINNER_VOCABULARY,
+  getEntryTags,
+  PART_OF_SPEECH_LABELS,
+  TOPIC_LABELS,
+};
 
 const vocabularyById = new Map(
   BEGINNER_VOCABULARY.map((entry) => [entry.id, entry]),

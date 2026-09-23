@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { FeedbackForm } from "@/components/feedback-form";
 import { NotificationManager } from "@/components/notification-manager";
+import { PronunciationGuide } from "@/components/pronunciation-guide";
 import type { LearnerState } from "@/lib/persistence";
 import type { ScheduleSettings } from "@/lib/schedule";
 import { getAllVocabulary } from "@/lib/vocabulary";
@@ -26,14 +27,14 @@ export function SettingsPanel({
     <div className="space-y-6">
       <section className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]/85 p-5">
         <h2 className="font-display text-xl text-[color:var(--ink)]">
-          Local schedule
+          Study hours
         </h2>
         <p className="mt-1 text-sm text-[color:var(--muted)]">
-          Words appear once per hour between these local times, inclusive.
+          One word per hour between these times (your local clock).
         </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="space-y-2 text-sm">
-            <span className="text-[color:var(--muted)]">Start hour (0–23)</span>
+            <span className="text-[color:var(--muted)]">Start (0–23)</span>
             <input
               type="number"
               min={0}
@@ -48,7 +49,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="space-y-2 text-sm">
-            <span className="text-[color:var(--muted)]">End hour (0–23)</span>
+            <span className="text-[color:var(--muted)]">End (0–23)</span>
             <input
               type="number"
               min={0}
@@ -66,10 +67,10 @@ export function SettingsPanel({
         <div className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-[color:var(--line)] px-4 py-3">
           <div>
             <p className="text-sm font-medium text-[color:var(--ink)]">
-              Prefer notifications
+              Want hourly pings
             </p>
             <p className="text-xs text-[color:var(--muted)]">
-              Requires browser permission below.
+              You’ll still need to allow notifications below.
             </p>
           </div>
           <Switch
@@ -90,6 +91,8 @@ export function SettingsPanel({
         }
       />
 
+      <PronunciationGuide />
+
       <FeedbackForm />
 
       <section className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]/85 p-5">
@@ -97,8 +100,7 @@ export function SettingsPanel({
           Progress
         </h2>
         <p className="mt-1 text-sm text-[color:var(--muted)]">
-          {learned} of {totalWords} beginner words have spaced-review history.
-          Everything is stored on this device.
+          You’ve reviewed {learned} of {totalWords} words on this device.
         </p>
         <Button
           variant="outline"
@@ -106,14 +108,14 @@ export function SettingsPanel({
           onClick={() => {
             if (
               window.confirm(
-                "Reset all progress, today’s queue, and settings on this device?",
+                "Clear progress, today’s queue, and settings on this device?",
               )
             ) {
               onReset();
             }
           }}
         >
-          Reset local progress
+          Reset this device
         </Button>
       </section>
     </div>

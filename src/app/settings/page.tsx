@@ -14,8 +14,8 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="mt-3 text-[color:var(--muted)]">
-          Tune your local hourly window and browser reminders. Progress stays on
-          this device.
+          Set your study hours, reminders, and leave feedback. Everything stays
+          on this device.
         </p>
       </section>
 
