@@ -21,7 +21,6 @@ function formatCountdown(target: Date | null, now: Date): string {
 
 export default function HomePage() {
   const {
-    hydrated,
     state,
     now,
     currentHour,
@@ -35,11 +34,11 @@ export default function HomePage() {
     rateCurrentWord,
   } = useLearner();
 
-  if (!hydrated || !state) {
+  if (!state) {
     return (
       <AppShell>
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]/80 p-8 text-[color:var(--muted)]">
-          Loading your local study queue…
+        <div className="rounded-2xl border border-dashed border-[color:var(--line)] p-8 text-[color:var(--muted)]">
+          Could not load local progress. Refresh the page to try again.
         </div>
       </AppShell>
     );

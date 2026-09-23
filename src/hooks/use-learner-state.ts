@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   applyReviewRating,
   createInitialProgress,
@@ -22,37 +28,52 @@ import {
 } from "@/lib/schedule";
 import { getVocabularyById } from "@/lib/vocabulary";
 
-let memoryState: LearnerState | null = null;
+let memoryState: LearnerState = createDefaultLearnerState();
+let initialized = false;
 const listeners = new Set<() => void>();
+const serverSnapshot: LearnerState = {
+  ...createDefaultLearnerState(),
+  dailyPlan: buildDailyPlan({
+    settings: createDefaultLearnerState().settings,
+    progressById: {},
+    existingPlan: null,
+    now: new Date(0),
+    random: () => 0.42,
+  }),
+};
 
 function emit() {
   listeners.forEach((listener) => listener());
 }
 
-function getSnapshot(): LearnerState {
-  if (!memoryState) {
-    memoryState = loadLearnerState();
+function ensureClientState(): LearnerState {
+  if (typeof window === "undefined") return serverSnapshot;
+  if (!initialized) {
+    const loaded = loadLearnerState();
     const dateKey = getLocalDateKey();
     memoryState = {
-      ...memoryState,
+      ...loaded,
       lastActiveDateKey: dateKey,
       reviewedToday:
-        memoryState.lastActiveDateKey === dateKey
-          ? memoryState.reviewedToday
-          : [],
+        loaded.lastActiveDateKey === dateKey ? loaded.reviewedToday : [],
       dailyPlan: buildDailyPlan({
-        settings: memoryState.settings,
-        progressById: memoryState.progressById,
-        existingPlan: memoryState.dailyPlan,
+        settings: loaded.settings,
+        progressById: loaded.progressById,
+        existingPlan: loaded.dailyPlan,
       }),
     };
-    saveLearnerState(memoryState);
+    initialized = true;
+    queueMicrotask(() => saveLearnerState(memoryState));
   }
   return memoryState;
 }
 
+function getSnapshot(): LearnerState {
+  return ensureClientState();
+}
+
 function getServerSnapshot(): LearnerState {
-  return createDefaultLearnerState();
+  return serverSnapshot;
 }
 
 function subscribe(listener: () => void) {
@@ -60,24 +81,29 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-function updateLearnerState(
-  updater: (prev: LearnerState) => LearnerState,
-): void {
-  const prev = getSnapshot();
-  const next = updater(prev);
-  memoryState = next;
-  saveLearnerState(next);
+function updateLearnerState(updater: (prev: LearnerState) => LearnerState) {
+  const prev = ensureClientState();
+  memoryState = updater(prev);
+  saveLearnerState(memoryState);
   emit();
 }
 
 export function useLearnerState() {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [now, setNow] = useState(() => new Date());
-  const hydrated = useSyncExternalStore(
+  const isClient = useSyncExternalStore(
     () => () => undefined,
     () => true,
     () => false,
   );
+
+  useEffect(() => {
+    // Ensure subscribers refresh once after client init replaces the default plan.
+    if (isClient) {
+      ensureClientState();
+      emit();
+    }
+  }, [isClient]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -99,33 +125,30 @@ export function useLearnerState() {
     });
   }, []);
 
-  const rateCurrentWord = useCallback(
-    (wordId: string, rating: ReviewRating) => {
-      const currentNow = new Date();
-      updateLearnerState((prev) => {
-        const existing =
-          prev.progressById[wordId] ?? createInitialProgress(wordId, currentNow);
-        const { progress } = applyReviewRating(existing, rating, currentNow);
-        const dateKey = getLocalDateKey(currentNow);
-        const reviewedToday =
-          prev.lastActiveDateKey === dateKey
-            ? Array.from(new Set([...prev.reviewedToday, wordId]))
-            : [wordId];
+  const rateCurrentWord = useCallback((wordId: string, rating: ReviewRating) => {
+    const currentNow = new Date();
+    updateLearnerState((prev) => {
+      const existing =
+        prev.progressById[wordId] ?? createInitialProgress(wordId, currentNow);
+      const { progress } = applyReviewRating(existing, rating, currentNow);
+      const dateKey = getLocalDateKey(currentNow);
+      const reviewedToday =
+        prev.lastActiveDateKey === dateKey
+          ? Array.from(new Set([...prev.reviewedToday, wordId]))
+          : [wordId];
 
-        return {
-          ...prev,
-          progressById: {
-            ...prev.progressById,
-            [wordId]: progress,
-          },
-          recentWordIds: [...prev.recentWordIds, wordId].slice(-20),
-          reviewedToday,
-          lastActiveDateKey: dateKey,
-        };
-      });
-    },
-    [],
-  );
+      return {
+        ...prev,
+        progressById: {
+          ...prev.progressById,
+          [wordId]: progress,
+        },
+        recentWordIds: [...prev.recentWordIds, wordId].slice(-20),
+        reviewedToday,
+        lastActiveDateKey: dateKey,
+      };
+    });
+  }, []);
 
   const resetProgress = useCallback(() => {
     const fresh = createDefaultLearnerState();
@@ -135,6 +158,7 @@ export function useLearnerState() {
       existingPlan: null,
     });
     memoryState = fresh;
+    initialized = true;
     saveLearnerState(fresh);
     emit();
   }, []);
@@ -167,7 +191,7 @@ export function useLearnerState() {
   }, [state, now]);
 
   return {
-    hydrated,
+    hydrated: isClient,
     state,
     now,
     updateSettings,

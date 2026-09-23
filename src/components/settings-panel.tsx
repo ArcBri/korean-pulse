@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { NotificationManager } from "@/components/notification-manager";
 import type { LearnerState } from "@/lib/persistence";
@@ -34,7 +33,7 @@ export function SettingsPanel({
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="space-y-2 text-sm">
             <span className="text-[color:var(--muted)]">Start hour (0–23)</span>
-            <Input
+            <input
               type="number"
               min={0}
               max={23}
@@ -44,11 +43,12 @@ export function SettingsPanel({
                   startHour: Number(event.target.value),
                 })
               }
+              className="h-10 w-full rounded-lg border border-[color:var(--line)] bg-[color:var(--surface-strong)] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
             />
           </label>
           <label className="space-y-2 text-sm">
             <span className="text-[color:var(--muted)]">End hour (0–23)</span>
-            <Input
+            <input
               type="number"
               min={0}
               max={23}
@@ -58,6 +58,7 @@ export function SettingsPanel({
                   endHour: Number(event.target.value),
                 })
               }
+              className="h-10 w-full rounded-lg border border-[color:var(--line)] bg-[color:var(--surface-strong)] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
             />
           </label>
         </div>

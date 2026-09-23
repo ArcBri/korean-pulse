@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   searchVocabulary,
@@ -36,11 +35,11 @@ export function VocabularyBrowser() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <Input
+        <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search Hangul, romanization, or English"
-          className="h-12 bg-[color:var(--surface-strong)]"
+          className="h-12 w-full rounded-xl border border-[color:var(--line)] bg-[color:var(--surface-strong)] px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
         />
         <div className="flex flex-wrap gap-2">
           {TOPICS.map((item) => (
