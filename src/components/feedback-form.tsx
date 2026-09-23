@@ -180,7 +180,7 @@ export function FeedbackForm() {
     mode === "resend"
       ? `Send up to ${FEEDBACK_DAILY_LIMIT} notes a day from here — no mail app needed. Goes to `
       : mode === "mailto"
-        ? `In-app email isn’t set up on this deployment yet, so Send opens your mail app. Up to ${FEEDBACK_DAILY_LIMIT} a day on this device. Destination: `
+        ? `In-app email isn’t set up on this deployment yet, so Open mail app uses your email app. Up to ${FEEDBACK_DAILY_LIMIT} a day on this device. Destination: `
         : `Up to ${FEEDBACK_DAILY_LIMIT} notes a day on this device. Destination: `;
 
   return (
