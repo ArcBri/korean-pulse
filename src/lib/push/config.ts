@@ -8,10 +8,25 @@ export function getVapidPrivateKey(): string | null {
   return key || null;
 }
 
+/** Apple requires JWT `sub` to be a mailto: or https: URI. */
+export function normalizeVapidSubject(raw: string | null | undefined): string {
+  const value = raw?.trim() || "mailto:noreply@hangul-hour.app";
+  if (/^mailto:/i.test(value) || /^https:\/\//i.test(value)) {
+    return value;
+  }
+  // Common misconfig: bare email without mailto:
+  if (value.includes("@") && !value.includes("://")) {
+    return `mailto:${value}`;
+  }
+  return value;
+}
+
 export function getVapidSubject(): string {
-  return (
-    process.env.VAPID_SUBJECT?.trim() || "mailto:hangul-hour@localhost"
-  );
+  return normalizeVapidSubject(process.env.VAPID_SUBJECT);
+}
+
+export function isValidVapidSubject(subject = getVapidSubject()): boolean {
+  return /^mailto:[^\s]+@.+/i.test(subject) || /^https:\/\/[^\s]+/i.test(subject);
 }
 
 export function isPushConfigured(): boolean {
