@@ -59,7 +59,8 @@ export function WordCard({
     setJustRated(rating);
   };
 
-  const confirmationRating = justRated ?? progress?.lastRating ?? null;
+  const selectedRating = justRated ?? progress?.lastRating ?? null;
+  const confirmationRating = selectedRating;
   const confirmationNext =
     progress?.nextReviewAt && confirmationRating
       ? formatNextReview(progress.nextReviewAt)
@@ -116,27 +117,34 @@ export function WordCard({
       {showActions && onRate ? (
         <div className="mt-8 space-y-3">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {RATINGS.map((rating) => (
-              <Button
-                key={rating.id}
-                type="button"
-                variant={rating.id === "good" ? "default" : "outline"}
-                aria-pressed={justRated === rating.id}
-                className={cn(
-                  "relative z-10 h-auto flex-col gap-0.5 py-3",
-                  rating.id === "good" &&
-                    "bg-[color:var(--accent)] text-[color:var(--accent-ink)] hover:bg-[color:var(--accent-deep)]",
-                  justRated === rating.id &&
-                    "ring-2 ring-[color:var(--accent)] ring-offset-2 ring-offset-[color:var(--surface-strong)]",
-                )}
-                onClick={() => handleRate(rating.id)}
-              >
-                <span>{rating.label}</span>
-                <span className="text-[10px] font-normal opacity-70">
-                  {rating.hint}
-                </span>
-              </Button>
-            ))}
+            {RATINGS.map((rating) => {
+              const selected = selectedRating === rating.id;
+              return (
+                <Button
+                  key={rating.id}
+                  type="button"
+                  variant={selected ? "default" : "outline"}
+                  aria-pressed={selected}
+                  className={cn(
+                    "relative z-10 h-auto flex-col gap-0.5 py-3",
+                    selected
+                      ? "bg-[color:var(--accent)] text-[color:var(--accent-ink)] hover:bg-[color:var(--accent-deep)]"
+                      : "bg-[color:var(--surface-strong)] text-[color:var(--ink)] hover:bg-[color:var(--accent-soft)]",
+                  )}
+                  onClick={() => handleRate(rating.id)}
+                >
+                  <span>{rating.label}</span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-normal",
+                      selected ? "opacity-90" : "opacity-70",
+                    )}
+                  >
+                    {rating.hint}
+                  </span>
+                </Button>
+              );
+            })}
           </div>
           {confirmationRating ? (
             <p
