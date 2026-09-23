@@ -21,6 +21,7 @@ function formatCountdown(target: Date | null, now: Date): string {
 
 export default function HomePage() {
   const {
+    hydrated,
     state,
     now,
     currentHour,
@@ -34,11 +35,11 @@ export default function HomePage() {
     rateCurrentWord,
   } = useLearner();
 
-  if (!state) {
+  if (!hydrated || !state) {
     return (
       <AppShell>
         <div className="rounded-2xl border border-dashed border-[color:var(--line)] p-8 text-[color:var(--muted)]">
-          Could not load local progress. Refresh the page to try again.
+          Loading your local study queue…
         </div>
       </AppShell>
     );
@@ -100,6 +101,7 @@ export default function HomePage() {
           word={currentWord}
           slotLabel={currentSlot.label}
           showActions
+          progress={state.progressById[currentWord.id] ?? null}
           onRate={(rating) => rateCurrentWord(currentWord.id, rating)}
           className="mb-10"
         />
@@ -127,6 +129,7 @@ export default function HomePage() {
               word={previewWord}
               slotLabel={`Up next · ${previewSlot.label}`}
               showActions
+              progress={state.progressById[previewWord.id] ?? null}
               onRate={(rating) => rateCurrentWord(previewWord.id, rating)}
             />
           ) : null}

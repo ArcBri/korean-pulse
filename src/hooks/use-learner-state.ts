@@ -28,9 +28,8 @@ import {
 } from "@/lib/schedule";
 import { getVocabularyById } from "@/lib/vocabulary";
 
-let memoryState: LearnerState = createDefaultLearnerState();
-let initialized = false;
 const listeners = new Set<() => void>();
+
 const serverSnapshot: LearnerState = {
   ...createDefaultLearnerState(),
   dailyPlan: buildDailyPlan({
@@ -42,34 +41,32 @@ const serverSnapshot: LearnerState = {
   }),
 };
 
+/** Must match serverSnapshot until the post-mount effect loads localStorage. */
+let memoryState: LearnerState = serverSnapshot;
+let initialized = false;
+
 function emit() {
   listeners.forEach((listener) => listener());
 }
 
-function ensureClientState(): LearnerState {
-  if (typeof window === "undefined") return serverSnapshot;
-  if (!initialized) {
-    const loaded = loadLearnerState();
-    const dateKey = getLocalDateKey();
-    memoryState = {
-      ...loaded,
-      lastActiveDateKey: dateKey,
-      reviewedToday:
-        loaded.lastActiveDateKey === dateKey ? loaded.reviewedToday : [],
-      dailyPlan: buildDailyPlan({
-        settings: loaded.settings,
-        progressById: loaded.progressById,
-        existingPlan: loaded.dailyPlan,
-      }),
-    };
-    initialized = true;
-    queueMicrotask(() => saveLearnerState(memoryState));
-  }
-  return memoryState;
+function loadClientState(): LearnerState {
+  const loaded = loadLearnerState();
+  const dateKey = getLocalDateKey();
+  return {
+    ...loaded,
+    lastActiveDateKey: dateKey,
+    reviewedToday:
+      loaded.lastActiveDateKey === dateKey ? loaded.reviewedToday : [],
+    dailyPlan: buildDailyPlan({
+      settings: loaded.settings,
+      progressById: loaded.progressById,
+      existingPlan: loaded.dailyPlan,
+    }),
+  };
 }
 
 function getSnapshot(): LearnerState {
-  return ensureClientState();
+  return memoryState;
 }
 
 function getServerSnapshot(): LearnerState {
@@ -82,33 +79,36 @@ function subscribe(listener: () => void) {
 }
 
 function updateLearnerState(updater: (prev: LearnerState) => LearnerState) {
-  const prev = ensureClientState();
-  memoryState = updater(prev);
+  if (typeof window !== "undefined" && !initialized) {
+    memoryState = loadClientState();
+    initialized = true;
+  }
+  memoryState = updater(memoryState);
   saveLearnerState(memoryState);
   emit();
 }
 
 export function useLearnerState() {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const [now, setNow] = useState(() => new Date());
-  const isClient = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false,
-  );
+  const [now, setNow] = useState(() => new Date(0));
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Ensure subscribers refresh once after client init replaces the default plan.
-    if (isClient) {
-      ensureClientState();
-      emit();
+    if (!initialized) {
+      memoryState = loadClientState();
+      initialized = true;
+      saveLearnerState(memoryState);
     }
-  }, [isClient]);
+    setNow(new Date());
+    setHydrated(true);
+    emit();
+  }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [hydrated]);
 
   const updateSettings = useCallback((settings: Partial<ScheduleSettings>) => {
     updateLearnerState((prev) => {
@@ -148,6 +148,8 @@ export function useLearnerState() {
         lastActiveDateKey: dateKey,
       };
     });
+    // Keep due-count / countdown in sync with the rating timestamp.
+    setNow(currentNow);
   }, []);
 
   const resetProgress = useCallback(() => {
@@ -160,6 +162,7 @@ export function useLearnerState() {
     memoryState = fresh;
     initialized = true;
     saveLearnerState(fresh);
+    setNow(new Date());
     emit();
   }, []);
 
@@ -191,7 +194,7 @@ export function useLearnerState() {
   }, [state, now]);
 
   return {
-    hydrated: isClient,
+    hydrated,
     state,
     now,
     updateSettings,

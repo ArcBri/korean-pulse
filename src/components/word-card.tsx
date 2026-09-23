@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TOPIC_LABELS, type VocabularyEntry } from "@/lib/vocabulary";
-import type { ReviewRating } from "@/lib/review";
+import type { ReviewRating, WordProgress } from "@/lib/review";
 import { cn } from "@/lib/utils";
 
 const RATINGS: { id: ReviewRating; label: string; hint: string }[] = [
@@ -13,10 +14,28 @@ const RATINGS: { id: ReviewRating; label: string; hint: string }[] = [
   { id: "easy", label: "Easy", hint: "Later" },
 ];
 
+const RATING_LABEL: Record<ReviewRating, string> = {
+  again: "Again",
+  hard: "Hard",
+  good: "Good",
+  easy: "Easy",
+};
+
+function formatNextReview(iso: string, now = new Date()): string {
+  const target = new Date(iso);
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 60_000) return "due now";
+  const days = Math.round(diffMs / (24 * 60 * 60 * 1000));
+  if (days <= 0) return "later today";
+  if (days === 1) return "in 1 day";
+  return `in ${days} days`;
+}
+
 type WordCardProps = {
   word: VocabularyEntry;
   slotLabel?: string;
   showActions?: boolean;
+  progress?: WordProgress | null;
   onRate?: (rating: ReviewRating) => void;
   className?: string;
 };
@@ -25,9 +44,28 @@ export function WordCard({
   word,
   slotLabel,
   showActions = false,
+  progress = null,
   onRate,
   className,
 }: WordCardProps) {
+  const [justRated, setJustRated] = useState<ReviewRating | null>(null);
+
+  useEffect(() => {
+    setJustRated(null);
+  }, [word.id]);
+
+  const handleRate = (rating: ReviewRating) => {
+    onRate?.(rating);
+    setJustRated(rating);
+  };
+
+  const selectedRating = justRated ?? progress?.lastRating ?? null;
+  const confirmationRating = selectedRating;
+  const confirmationNext =
+    progress?.nextReviewAt && confirmationRating
+      ? formatNextReview(progress.nextReviewAt)
+      : null;
+
   return (
     <article
       className={cn(
@@ -77,24 +115,52 @@ export function WordCard({
       ) : null}
 
       {showActions && onRate ? (
-        <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {RATINGS.map((rating) => (
-            <Button
-              key={rating.id}
-              variant={rating.id === "good" ? "default" : "outline"}
-              className={cn(
-                "h-auto flex-col gap-0.5 py-3",
-                rating.id === "good" &&
-                  "bg-[color:var(--accent)] text-[color:var(--accent-ink)] hover:bg-[color:var(--accent-deep)]",
-              )}
-              onClick={() => onRate(rating.id)}
+        <div className="mt-8 space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {RATINGS.map((rating) => {
+              const selected = selectedRating === rating.id;
+              return (
+                <Button
+                  key={rating.id}
+                  type="button"
+                  variant={selected ? "default" : "outline"}
+                  aria-pressed={selected}
+                  className={cn(
+                    "relative z-10 h-auto flex-col gap-0.5 py-3",
+                    selected
+                      ? "bg-[color:var(--accent)] text-[color:var(--accent-ink)] hover:bg-[color:var(--accent-deep)]"
+                      : "bg-[color:var(--surface-strong)] text-[color:var(--ink)] hover:bg-[color:var(--accent-soft)]",
+                  )}
+                  onClick={() => handleRate(rating.id)}
+                >
+                  <span>{rating.label}</span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-normal",
+                      selected ? "opacity-90" : "opacity-70",
+                    )}
+                  >
+                    {rating.hint}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+          {confirmationRating ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className="rounded-xl border border-[color:var(--accent)]/30 bg-[color:var(--accent-soft)] px-3 py-2 text-sm text-[color:var(--accent-deep)]"
             >
-              <span>{rating.label}</span>
-              <span className="text-[10px] font-normal opacity-70">
-                {rating.hint}
-              </span>
-            </Button>
-          ))}
+              Logged <strong>{RATING_LABEL[confirmationRating]}</strong>
+              {confirmationNext ? ` · next review ${confirmationNext}` : null}.
+              Progress is saved on this device.
+            </p>
+          ) : (
+            <p className="text-xs text-[color:var(--muted)]">
+              Rate how well you knew this word to schedule the next review.
+            </p>
+          )}
         </div>
       ) : null}
     </article>
