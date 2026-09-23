@@ -10,8 +10,8 @@ Hangul Hour shows one useful word or short phrase every hour from **9:00 AM to 5
 - Curated beginner-core list: greetings, people, time, food, places, transport, verbs, adjectives, numbers, and survival phrases
 - Randomized new-word selection with spaced repeats (`Again` / `Hard` / `Good` / `Easy`)
 - Searchable vocabulary library
-- Optional browser notifications (best while the app is open or installed)
-- Local-only progress — no account required
+- Optional browser notifications, including background Web Push when configured
+- Local progress in `localStorage` — no account required
 
 ## Run locally
 
@@ -70,12 +70,36 @@ vercel --prod
 
 ### Option B — Import the Git repo
 
-1. Push this project to GitHub/GitLab/Bitbucket (or use **Create repo** in Cursor if you have not yet).
+1. Push this project to GitHub/GitLab/Bitbucket.
 2. Open [vercel.com/new](https://vercel.com/new) and import the repository.
 3. Leave the defaults (Framework: Next.js, Build: `next build`, Output: automatic).
 4. Deploy.
 
-Learner progress stays in browser `localStorage`. For in-app Feedback email on Vercel, add `RESEND_API_KEY` and `FEEDBACK_FROM_EMAIL` (plus optional destination overrides) in the project Environment Variables.
+Learner progress stays in browser `localStorage`. For in-app Feedback email on Vercel, add `RESEND_API_KEY` and `FEEDBACK_FROM_EMAIL` (plus optional destination overrides) in the project Environment Variables. Background push needs the env vars below.
+
+## Background Web Push (free hobby setup)
+
+Foreground timers pause when iOS backgrounds the Home Screen app. Background alerts use **Web Push**:
+
+1. **VAPID keys** — `npx web-push generate-vapid-keys --json`
+2. **Upstash Redis** (free) — create a database and copy REST URL + token
+3. **Vercel env vars** (see `.env.example`):
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+   - `VAPID_PRIVATE_KEY`
+   - `VAPID_SUBJECT` (e.g. `mailto:you@example.com`)
+   - `UPSTASH_REDIS_REST_URL`
+   - `UPSTASH_REDIS_REST_TOKEN`
+   - `CRON_SECRET` (long random string)
+4. **Hourly cron** — Vercel Hobby cron is once/day, so use the included GitHub Action:
+   - Repo secrets: `HANGUL_HOUR_CRON_URL` = `https://<your-app>.vercel.app/api/push/cron`
+   - Repo secret: `CRON_SECRET` = same as Vercel
+   - Workflow: `.github/workflows/hourly-push.yml` (runs at minute 0 each hour)
+
+When a learner enables notifications, the app stores their push subscription, timezone, and study hours in Redis. The cron sends a **generic** reminder: “Your Hangul Hour word is ready.” Opening the app still shows the real word for that hour.
+
+**iPhone:** iOS 16.4+, Add to Home Screen, open from the icon, then enable notifications from a tap.
+
+Without these env vars, Hangul Hour keeps working; reminders only fire while the app is open.
 
 ## How the schedule works
 
@@ -86,9 +110,10 @@ Learner progress stays in browser `localStorage`. For in-app Feedback email on V
 
 ## Notifications and PWA
 
-- Enable notifications in **Settings**. The app registers a service worker and can show hourly reminders while it remains open or installed.
-- Browsers and operating systems may pause background alerts when the tab is closed. The in-app dashboard is always the source of truth.
-- Installable via the browser “Add to Home Screen” / install prompt using `public/manifest.webmanifest`.
+- Enable notifications in **Settings**.
+- With Web Push configured, hourly generic reminders can arrive in the background.
+- Without it, notifications work best while the app stays open or installed in the foreground.
+- Installable via “Add to Home Screen” using `public/manifest.webmanifest`.
 
 ## Project layout
 
@@ -96,5 +121,7 @@ Learner progress stays in browser `localStorage`. For in-app Feedback email on V
 - `src/lib/review.ts` — spaced-review ratings
 - `src/lib/schedule.ts` — hourly queue construction
 - `src/lib/persistence.ts` — localStorage state
-- `src/lib/notifications.ts` — permission + notification helpers
+- `src/lib/notifications.ts` — permission + Web Push client helpers
+- `src/lib/push/` — VAPID/config, Redis store, timezone matching, send
+- `src/app/api/push/` — config, subscribe, unsubscribe, cron
 - `src/app` — Today, Library, and Settings pages

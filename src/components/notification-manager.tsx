@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, BellOff, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  fetchPushConfig,
   getNotificationPermission,
+  hasActiveWebPushSubscription,
   registerServiceWorker,
   requestNotificationPermission,
   showWordNotification,
+  subscribeToWebPush,
+  unsubscribeFromWebPush,
 } from "@/lib/notifications";
 import {
   getCurrentSlotHour,
@@ -33,6 +37,35 @@ export function NotificationManager({
     NotificationPermission | "unsupported"
   >(() => getNotificationPermission());
   const [status, setStatus] = useState<string>("");
+  const [pushConfigured, setPushConfigured] = useState(false);
+  const [pushActive, setPushActive] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const config = await fetchPushConfig();
+      const active = await hasActiveWebPushSubscription();
+      if (cancelled) return;
+      setPushConfigured(config.configured);
+      setPushActive(active);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || permission !== "granted" || !pushConfigured) return;
+    void syncSchedule();
+
+    async function syncSchedule() {
+      const result = await subscribeToWebPush({
+        startHour: settings.startHour,
+        endHour: settings.endHour,
+      });
+      setPushActive(result.ok);
+    }
+  }, [enabled, permission, pushConfigured, settings.startHour, settings.endHour]);
 
   const enable = async () => {
     if (!("Notification" in window)) {
@@ -45,35 +78,56 @@ export function NotificationManager({
     const next = await requestNotificationPermission();
     setPermission(next);
 
-    if (next === "granted") {
-      onEnabledChange(true);
+    if (next !== "granted") {
+      onEnabledChange(false);
       setStatus(
-        "Notifications on while Hangul Hour stays open or installed.",
+        next === "denied"
+          ? "Blocked by the browser. You can still study from the Today tab."
+          : "Permission wasn’t granted.",
       );
-      const hour = getCurrentSlotHour(new Date(), settings);
-      const slot =
-        hour === null ? null : plan?.slots.find((item) => item.hour === hour);
-      const word = slot ? getVocabularyById(slot.wordId) : undefined;
-      if (word && slot) {
-        await showWordNotification({
-          title: `Hangul Hour · ${slot.label}`,
-          body: `${word.hangul} · ${word.romanization} — ${word.meaning}`,
-          tag: `test-${Date.now()}`,
-          url: "/",
-        });
-      }
       return;
     }
 
-    onEnabledChange(false);
-    setStatus(
-      next === "denied"
-        ? "Blocked by the browser. You can still study from the Today tab."
-        : "Permission wasn’t granted.",
-    );
+    onEnabledChange(true);
+
+    const config = await fetchPushConfig();
+    setPushConfigured(config.configured);
+
+    if (config.configured) {
+      const push = await subscribeToWebPush({
+        startHour: settings.startHour,
+        endHour: settings.endHour,
+      });
+      setPushActive(push.ok);
+      setStatus(
+        push.ok
+          ? "Background hourly reminders enabled. On iPhone, keep the Home Screen app installed and allow notifications."
+          : `Local reminders only for now — ${push.error}`,
+      );
+    } else {
+      setPushActive(false);
+      setStatus(
+        "Notifications on while Hangul Hour stays open or installed. Add VAPID + Upstash Redis env vars for background Web Push.",
+      );
+    }
+
+    const hour = getCurrentSlotHour(new Date(), settings);
+    const slot =
+      hour === null ? null : plan?.slots.find((item) => item.hour === hour);
+    const word = slot ? getVocabularyById(slot.wordId) : undefined;
+    if (word && slot) {
+      await showWordNotification({
+        title: `Hangul Hour · ${slot.label}`,
+        body: `${word.hangul} · ${word.romanization} — ${word.meaning}`,
+        tag: `test-${Date.now()}`,
+        url: "/",
+      });
+    }
   };
 
-  const disable = () => {
+  const disable = async () => {
+    await unsubscribeFromWebPush();
+    setPushActive(false);
     onEnabledChange(false);
     setStatus("Notifications off. Today still updates on the hour.");
   };
@@ -95,9 +149,15 @@ export function NotificationManager({
             Hourly reminders
           </h2>
           <p className="mt-1 text-sm text-[color:var(--muted)]">
-            Works best while the app is open or added to your home screen.
-            Phones often quiet background alerts — Today is always up to date.
+            {pushConfigured
+              ? "Background Web Push sends a generic reminder each study hour, even when the app is closed. On iPhone, add Hangul Hour to your Home Screen first."
+              : "Works best while the app is open or added to your home screen. Phones often quiet background alerts — Today is always up to date."}
           </p>
+          {pushConfigured ? (
+            <p className="mt-2 text-xs text-[color:var(--muted)]">
+              Background push: {pushActive ? "subscribed" : "not subscribed yet"}
+            </p>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             {!enabled || permission !== "granted" ? (
               <Button
@@ -107,7 +167,7 @@ export function NotificationManager({
                 Enable notifications
               </Button>
             ) : (
-              <Button variant="outline" onClick={disable}>
+              <Button variant="outline" onClick={() => void disable()}>
                 Turn off notifications
               </Button>
             )}
