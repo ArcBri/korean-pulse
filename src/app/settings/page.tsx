@@ -5,7 +5,7 @@ import { SettingsPanel } from "@/components/settings-panel";
 import { useLearner } from "@/components/learner-provider";
 
 export default function SettingsPage() {
-  const { state, updateSettings, resetProgress } = useLearner();
+  const { hydrated, state, updateSettings, resetProgress } = useLearner();
 
   return (
     <AppShell>
@@ -19,9 +19,9 @@ export default function SettingsPage() {
         </p>
       </section>
 
-      {!state ? (
+      {!hydrated || !state ? (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[color:var(--surface)]/80 p-8 text-[color:var(--muted)]">
-          Could not load settings.
+          Loading settings…
         </div>
       ) : (
         <SettingsPanel
