@@ -1,13 +1,25 @@
 # Hourly Web Push cron for Hangul Hour (free-tier alternative to Vercel Hobby cron).
+#
+# Cron expressions are ALWAYS in UTC (not the learner's local timezone).
+# Local study hours are applied inside /api/push/cron using each subscription's timeZone.
+#
+# GitHub Actions schedule quirks:
+# - New workflows can take a while before the first schedule fires
+# - Runs are often delayed 5–15+ minutes past the cron minute (sometimes longer)
+# - Schedules only run from the default branch (main)
+# - Repo Actions secrets are required (same secrets as workflow_dispatch)
+#
 # Required repo secrets:
-#   HANGUL_HOUR_CRON_URL  — e.g. https://your-app.vercel.app/api/push/cron
+#   HANGUL_HOUR_CRON_URL  — e.g. https://www.hangul-hour.app/api/push/cron
 #   CRON_SECRET           — same value as the Vercel CRON_SECRET env var
 
 name: Hourly Web Push
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    # Fire several times each UTC hour. /api/push/cron dedupes via lastNotifiedSlot,
+    # so extra runs are safe and compensate for GitHub schedule delay/skips.
+    - cron: "0,15,30,45 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -19,12 +31,25 @@ jobs:
           HANGUL_HOUR_CRON_URL: ${{ secrets.HANGUL_HOUR_CRON_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$HANGUL_HOUR_CRON_URL" ] || [ -z "$CRON_SECRET" ]; then
+          set -euo pipefail
+          echo "UTC now: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Event: ${GITHUB_EVENT_NAME}"
+
+          if [ -z "${HANGUL_HOUR_CRON_URL}" ] || [ -z "${CRON_SECRET}" ]; then
             echo "Missing HANGUL_HOUR_CRON_URL or CRON_SECRET secrets; skipping."
             exit 0
           fi
-          curl --fail --silent --show-error \
+
+          echo "Calling cron endpoint..."
+          response="$(curl --fail --silent --show-error \
             -X POST \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             -H "Content-Type: application/json" \
-            "$HANGUL_HOUR_CRON_URL"
+            -H "User-Agent: hangul-hour-github-action" \
+            "${HANGUL_HOUR_CRON_URL}")"
+
+          echo "Cron response: ${response}"
+
+          if echo "${response}" | grep -q '"checked":0'; then
+            echo "::warning::No push subscriptions in Redis (checked=0). Enable notifications from the iPhone Home Screen app after push is configured."
+          fi

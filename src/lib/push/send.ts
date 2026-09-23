@@ -9,7 +9,7 @@ import {
   listPushSubscriptions,
   markNotified,
 } from "@/lib/push/store";
-import { shouldSendHourlyReminder } from "@/lib/push/timezone";
+import { isHourInSchedule, shouldSendHourlyReminder } from "@/lib/push/timezone";
 import {
   GENERIC_PUSH_PAYLOAD,
   type StoredPushSubscription,
@@ -29,6 +29,16 @@ export type CronSendResult = {
   skipped: number;
   removed: number;
   errors: number;
+  /** Sanitized per-subscription decisions (no endpoint/keys). */
+  details: Array<{
+    timeZone: string;
+    startHour: number;
+    endHour: number;
+    localHour: number;
+    slotKey: string;
+    decision: "sent" | "skipped" | "removed" | "error";
+    reason?: string;
+  }>;
 };
 
 async function sendGenericPush(
@@ -77,19 +87,43 @@ export async function sendDueHourlyPushes(now = new Date()): Promise<CronSendRes
     skipped: 0,
     removed: 0,
     errors: 0,
+    details: [],
   };
 
   for (const { record } of subscriptions) {
+    const timeZone = record.timeZone || "UTC";
     const decision = shouldSendHourlyReminder({
       now,
-      timeZone: record.timeZone || "UTC",
+      timeZone,
       startHour: record.startHour,
       endHour: record.endHour,
       lastNotifiedSlot: record.lastNotifiedSlot,
     });
 
+    const baseDetail = {
+      timeZone,
+      startHour: record.startHour,
+      endHour: record.endHour,
+      localHour: decision.hour,
+      slotKey: decision.slotKey,
+    };
+
     if (!decision.send) {
       result.skipped += 1;
+      const outside = !isHourInSchedule(
+        decision.hour,
+        record.startHour,
+        record.endHour,
+      );
+      result.details.push({
+        ...baseDetail,
+        decision: "skipped",
+        reason: outside
+          ? "outside_study_window"
+          : record.lastNotifiedSlot === decision.slotKey
+            ? "already_notified_slot"
+            : "skipped",
+      });
       continue;
     }
 
@@ -97,10 +131,21 @@ export async function sendDueHourlyPushes(now = new Date()): Promise<CronSendRes
     if (outcome === "sent") {
       await markNotified(record.endpoint, decision.slotKey);
       result.sent += 1;
+      result.details.push({ ...baseDetail, decision: "sent" });
     } else if (outcome === "gone") {
       result.removed += 1;
+      result.details.push({
+        ...baseDetail,
+        decision: "removed",
+        reason: "subscription_expired",
+      });
     } else {
       result.errors += 1;
+      result.details.push({
+        ...baseDetail,
+        decision: "error",
+        reason: "web_push_send_failed",
+      });
     }
   }
 

@@ -18,8 +18,13 @@ async function handle(request: Request) {
   }
 
   try {
-    const result = await sendDueHourlyPushes(new Date());
-    return NextResponse.json({ ok: true, ...result });
+    const now = new Date();
+    const result = await sendDueHourlyPushes(now);
+    return NextResponse.json({
+      ok: true,
+      ranAt: now.toISOString(),
+      ...result,
+    });
   } catch (error) {
     console.error("push cron failed", error);
     return NextResponse.json(
