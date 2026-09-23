@@ -90,11 +90,13 @@ Foreground timers pause when iOS backgrounds the Home Screen app. Background ale
    - `UPSTASH_REDIS_REST_URL`
    - `UPSTASH_REDIS_REST_TOKEN`
    - `CRON_SECRET` (long random string)
-4. **Hourly cron** — Vercel Hobby cron is once/day, so use the included GitHub Action:
-   - Repo secrets: `HANGUL_HOUR_CRON_URL` = `https://www.hangul-hour.app/api/push/cron`
-   - Repo secret: `CRON_SECRET` = same as Vercel
-   - Workflow: `.github/workflows/hourly-push.yml` (UTC cron at `:00/:15/:30/:45`; local study hours applied in the API)
-   - Note: GitHub `schedule` events can delay or skip the first hour after merge — check Actions for event `schedule`, and use **Run workflow** to test. Cron JSON `checked: 0` means no device has subscribed yet.
+4. **Hourly cron (primary: external free cron)** — do **not** rely on GitHub Actions `schedule` for this repo (it has stayed at zero `schedule` runs; only manual `workflow_dispatch` works). Prefer [cron-job.org](https://cron-job.org):
+   - URL: `https://www.hangul-hour.app/api/push/cron?secret=YOUR_CRON_SECRET` (or Bearer header)
+   - Every 15 minutes (API dedupes per local study hour)
+   - Full steps: project docs `web-push-setup.md`
+   - Optional backup: GitHub **Actions → Hourly Web Push → Run workflow**
+   - Vercel Hobby cron is once/day — not enough alone
+   - Cron JSON `checked: 0` means no device has subscribed yet; `vapid_auth_failed` means fix `VAPID_SUBJECT` and re-Enable on the phone.
 
 When a learner enables notifications, the app stores their push subscription, timezone, and study hours in Redis. The cron sends a **generic** reminder: “Your Hangul Hour word is ready.” Opening the app still shows the real word for that hour.
 

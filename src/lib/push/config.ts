@@ -54,5 +54,18 @@ export function isAuthorizedCronRequest(request: Request): boolean {
   if (auth === `Bearer ${secret}`) return true;
 
   const headerSecret = request.headers.get("x-cron-secret");
-  return headerSecret === secret;
+  if (headerSecret === secret) return true;
+
+  // Query param for external cron UIs that struggle with custom headers
+  // (e.g. some free cron-job.org setups). Prefer Bearer when possible.
+  try {
+    const url = new URL(request.url);
+    const querySecret =
+      url.searchParams.get("secret") || url.searchParams.get("cron_secret");
+    if (querySecret === secret) return true;
+  } catch {
+    // ignore malformed URL
+  }
+
+  return false;
 }
