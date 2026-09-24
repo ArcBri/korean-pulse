@@ -31,13 +31,27 @@ export async function savePushSubscription(
     throw new Error("Push store is not configured (Upstash Redis env missing).");
   }
 
+  // Replacing a device's subscription: drop older rows with the same deviceId
+  // so force-refresh / re-Enable does not leave orphan Apple endpoints.
+  if (record.deviceId) {
+    const existing = await listPushSubscriptions();
+    for (const { record: other } of existing) {
+      if (
+        other.deviceId === record.deviceId &&
+        other.endpoint !== record.endpoint
+      ) {
+        await deletePushSubscription(other.endpoint);
+      }
+    }
+  }
+
   const id = subscriptionId(record.endpoint);
   const key = subscriptionKey(id);
-  const existing = (await redis.get(key)) as StoredPushSubscription | null;
+  const previous = (await redis.get(key)) as StoredPushSubscription | null;
   const next: StoredPushSubscription = {
     ...record,
     lastNotifiedSlot:
-      record.lastNotifiedSlot ?? existing?.lastNotifiedSlot ?? null,
+      record.lastNotifiedSlot ?? previous?.lastNotifiedSlot ?? null,
   };
   await redis.set(key, next);
   await redis.sadd(SUB_INDEX_KEY, id);

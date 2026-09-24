@@ -4,17 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import { useLearner } from "@/components/learner-provider";
 import {
   computeDelayToNextHourBoundary,
+  fetchPushConfig,
+  getNotificationPermission,
   hasActiveWebPushSubscription,
   registerServiceWorker,
   showWordNotification,
+  subscribeToWebPush,
 } from "@/lib/notifications";
 import { getCurrentSlotHour, getHourSlots } from "@/lib/schedule";
 import { getVocabularyById } from "@/lib/vocabulary";
 
+/**
+ * Local fallback notifications only run while the page is open and only when
+ * there is no active Web Push subscription. Background delivery must come from
+ * /api/push/cron → service worker `push` (generic "word is ready" copy).
+ */
 export function NotificationScheduler() {
   const { hydrated, state } = useLearner();
   const notifiedRef = useRef(new Set<string>());
-  const [useLocalFallback, setUseLocalFallback] = useState(true);
+  // Start false so we never flash a local alert before knowing push status.
+  const [useLocalFallback, setUseLocalFallback] = useState(false);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -22,16 +31,48 @@ export function NotificationScheduler() {
   }, [hydrated]);
 
   useEffect(() => {
-    if (!hydrated || !state?.settings.notificationsEnabled) return;
+    if (!hydrated || !state?.settings.notificationsEnabled) {
+      setUseLocalFallback(false);
+      return;
+    }
+
     let cancelled = false;
+
     void (async () => {
-      const activePush = await hasActiveWebPushSubscription();
-      if (!cancelled) setUseLocalFallback(!activePush);
+      const permission = getNotificationPermission();
+      if (permission !== "granted") {
+        if (!cancelled) setUseLocalFallback(false);
+        return;
+      }
+
+      const config = await fetchPushConfig();
+      let activePush = await hasActiveWebPushSubscription();
+
+      // Repair: permission granted + server push configured, but browser lost
+      // its PushSubscription (common after SW updates). Re-subscribe silently.
+      if (config.configured && !activePush) {
+        const repaired = await subscribeToWebPush({
+          startHour: state.settings.startHour,
+          endHour: state.settings.endHour,
+        });
+        activePush = repaired.ok;
+      }
+
+      if (!cancelled) {
+        // Local fallback only when background push is unavailable.
+        setUseLocalFallback(!config.configured || !activePush);
+      }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [hydrated, state?.settings.notificationsEnabled, state?.settings.startHour, state?.settings.endHour]);
+  }, [
+    hydrated,
+    state?.settings.notificationsEnabled,
+    state?.settings.startHour,
+    state?.settings.endHour,
+  ]);
 
   useEffect(() => {
     if (
@@ -61,11 +102,11 @@ export function NotificationScheduler() {
       ) {
         const slot = state.dailyPlan.slots.find((item) => item.hour === hour);
         const word = slot ? getVocabularyById(slot.wordId) : undefined;
-        const tag = `${state.dailyPlan.dateKey}-${hour}`;
+        const tag = `local-${state.dailyPlan.dateKey}-${hour}`;
         if (word && slot && !notifiedRef.current.has(tag)) {
           notifiedRef.current.add(tag);
           await showWordNotification({
-            title: `Hangul Hour · ${slot.label}`,
+            title: `Hangul Hour · ${slot.label} (while open)`,
             body: `${word.hangul} · ${word.romanization} — ${word.meaning}`,
             tag,
             url: "/",

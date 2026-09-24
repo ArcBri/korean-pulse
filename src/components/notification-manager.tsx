@@ -111,27 +111,34 @@ export function NotificationManager({
       setPushActive(push.ok);
       setStatus(
         push.ok
-          ? "Background hourly reminders enabled. On iPhone, keep the Home Screen app installed and allow notifications."
-          : `Local reminders only for now — ${push.error}`,
+          ? "Background push subscribed. Closed-app alerts say “Your Hangul Hour word is ready” (not the Korean word). Keep Focus/DND off for Hangul Hour."
+          : `Local reminders only while open — ${push.error}`,
       );
+      if (push.ok) {
+        await showWordNotification({
+          title: "Hangul Hour",
+          body: "Test alert — background push is set up. Hourly closed-app alerts will look like this.",
+          tag: `test-${Date.now()}`,
+          url: "/",
+        });
+      }
     } else {
       setPushActive(false);
       setStatus(
-        "Notifications on while Hangul Hour stays open or installed. Add VAPID + Upstash Redis env vars for background Web Push.",
+        "Notifications on while Hangul Hour stays open. Add VAPID + Upstash Redis for background Web Push.",
       );
-    }
-
-    const hour = getCurrentSlotHour(new Date(), settings);
-    const slot =
-      hour === null ? null : plan?.slots.find((item) => item.hour === hour);
-    const word = slot ? getVocabularyById(slot.wordId) : undefined;
-    if (word && slot) {
-      await showWordNotification({
-        title: `Hangul Hour · ${slot.label}`,
-        body: `${word.hangul} · ${word.romanization} — ${word.meaning}`,
-        tag: `test-${Date.now()}`,
-        url: "/",
-      });
+      const hour = getCurrentSlotHour(new Date(), settings);
+      const slot =
+        hour === null ? null : plan?.slots.find((item) => item.hour === hour);
+      const word = slot ? getVocabularyById(slot.wordId) : undefined;
+      if (word && slot) {
+        await showWordNotification({
+          title: `Hangul Hour · ${slot.label} (while open)`,
+          body: `${word.hangul} · ${word.romanization} — ${word.meaning}`,
+          tag: `test-${Date.now()}`,
+          url: "/",
+        });
+      }
     }
   };
 
