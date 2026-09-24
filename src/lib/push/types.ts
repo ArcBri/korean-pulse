@@ -17,6 +17,8 @@ export type StoredPushSubscription = {
   endHour: number;
   updatedAt: string;
   lastNotifiedSlot?: string | null;
+  /** Stable per-browser id so re-subscribe replaces old Redis rows. */
+  deviceId?: string | null;
 };
 
 export type PushSubscribeBody = {
@@ -24,6 +26,7 @@ export type PushSubscribeBody = {
   timeZone: string;
   startHour: number;
   endHour: number;
+  deviceId?: string;
 };
 
 export const GENERIC_PUSH_PAYLOAD = {

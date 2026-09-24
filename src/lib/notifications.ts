@@ -101,6 +101,25 @@ export function getDeviceTimeZone(): string {
   }
 }
 
+const DEVICE_ID_KEY = "hangul-hour:push-device-id";
+
+export function getOrCreatePushDeviceId(): string {
+  if (typeof window === "undefined") return "server";
+  try {
+    const existing = window.localStorage.getItem(DEVICE_ID_KEY);
+    if (existing) return existing;
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(DEVICE_ID_KEY, id);
+    return id;
+  } catch {
+    return `device-${Date.now()}`;
+  }
+}
+
+
 export async function subscribeToWebPush(options: {
   startHour: number;
   endHour: number;
@@ -156,6 +175,7 @@ export async function subscribeToWebPush(options: {
       timeZone: getDeviceTimeZone(),
       startHour: options.startHour,
       endHour: options.endHour,
+      deviceId: getOrCreatePushDeviceId(),
     }),
   });
 
@@ -192,6 +212,7 @@ export async function syncWebPushSchedule(options: {
       timeZone: getDeviceTimeZone(),
       startHour: options.startHour,
       endHour: options.endHour,
+      deviceId: getOrCreatePushDeviceId(),
     }),
   });
   return response.ok;

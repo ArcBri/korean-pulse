@@ -35,6 +35,7 @@ export async function POST(request: Request) {
   const timeZone = body.timeZone?.trim() || "UTC";
   const startHour = clampHour(body.startHour);
   const endHour = clampHour(body.endHour);
+  const deviceId = body.deviceId?.trim() || null;
 
   if (!endpoint || !p256dh || !auth || startHour === null || endHour === null) {
     return NextResponse.json(
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
     timeZone,
     startHour,
     endHour,
+    deviceId,
     updatedAt: new Date().toISOString(),
   });
 
