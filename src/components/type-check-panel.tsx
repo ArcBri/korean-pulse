@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { HangulTypeForm } from "@/components/hangul-type-form";
 import {
@@ -22,19 +21,6 @@ export function TypeCheckPanel({
   open,
   onOpenChange,
 }: TypeCheckPanelProps) {
-  const [doneCorrect, setDoneCorrect] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setDoneCorrect(false);
-  }, [open, word?.id]);
-
-  useEffect(() => {
-    if (!doneCorrect) return;
-    const t = window.setTimeout(() => onOpenChange(false), 900);
-    return () => window.clearTimeout(t);
-  }, [doneCorrect, onOpenChange]);
-
   if (!word) return null;
 
   return (
@@ -52,11 +38,8 @@ export function TypeCheckPanel({
           <HangulTypeForm
             word={word}
             resetKey={`${word.id}-${open ? "open" : "closed"}`}
-            onCorrect={() => setDoneCorrect(true)}
-            onMiss={() => {
-              /* Phase A Today: rating already saved; miss does not change schedule */
-            }}
-            onSkip={() => onOpenChange(false)}
+            autoAdvanceOnCorrect
+            onAdvance={() => onOpenChange(false)}
           />
         </DialogPrimitive.Popup>
       </DialogPortal>

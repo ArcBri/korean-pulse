@@ -62,3 +62,33 @@ export function countEligibleReviewWords(
   return Object.values(progressById).filter((item) => item.seenCount >= 1)
     .length;
 }
+
+export type SessionGrade = {
+  label: string;
+  detail: string;
+  percent: number;
+};
+
+/** Quick letter-ish grade from correct / total. */
+export function gradeReviewSession(
+  correct: number,
+  total: number,
+): SessionGrade {
+  if (total <= 0) {
+    return { label: "—", detail: "No cards in this session.", percent: 0 };
+  }
+  const percent = Math.round((correct / total) * 100);
+  if (percent >= 90) {
+    return { label: "A", detail: "Excellent recall.", percent };
+  }
+  if (percent >= 80) {
+    return { label: "B", detail: "Solid session.", percent };
+  }
+  if (percent >= 70) {
+    return { label: "C", detail: "Getting there.", percent };
+  }
+  if (percent >= 50) {
+    return { label: "D", detail: "Worth another pass.", percent };
+  }
+  return { label: "F", detail: "Come back after Today.", percent };
+}
