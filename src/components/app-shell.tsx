@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Clock3, Settings2 } from "lucide-react";
+import { BookOpen, Clock3, RotateCcw, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Today", icon: Clock3 },
+  { href: "/review", label: "Review", icon: RotateCcw },
   { href: "/library", label: "Library", icon: BookOpen },
   { href: "/settings", label: "Settings", icon: Settings2 },
 ] as const;
@@ -65,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="app-shell-mobile-nav fixed inset-x-0 bottom-0 z-50 md:hidden"
       >
         <div className="mx-auto max-w-5xl px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
-          <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[color:var(--line)]/80 bg-[color:var(--surface)]/85 shadow-[0_-8px_32px_rgba(23,53,44,0.12)] backdrop-blur-md">
+          <div className="grid grid-cols-4 overflow-hidden rounded-2xl border border-[color:var(--line)]/80 bg-[color:var(--surface)]/85 shadow-[0_-8px_32px_rgba(23,53,44,0.12)] backdrop-blur-md">
             {NAV.map(({ href, label, icon: Icon }) => {
               const active =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);

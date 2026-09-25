@@ -1,6 +1,7 @@
 import type { WordProgress } from "@/lib/review";
 import {
   DEFAULT_SCHEDULE,
+  clampReviewSessionSize,
   type DailyPlan,
   type ScheduleSettings,
 } from "@/lib/schedule";
@@ -43,6 +44,12 @@ export function loadLearnerState(): LearnerState {
       settings: {
         ...DEFAULT_SCHEDULE,
         ...(parsed.settings ?? {}),
+        reviewSessionSize: clampReviewSessionSize(
+          typeof (parsed.settings as ScheduleSettings | undefined)
+            ?.reviewSessionSize === "number"
+            ? (parsed.settings as ScheduleSettings).reviewSessionSize
+            : DEFAULT_SCHEDULE.reviewSessionSize,
+        ),
       },
       progressById: parsed.progressById ?? {},
       dailyPlan: parsed.dailyPlan ?? null,

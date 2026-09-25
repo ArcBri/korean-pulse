@@ -10,7 +10,18 @@ export type ScheduleSettings = {
   startHour: number;
   endHour: number;
   notificationsEnabled: boolean;
+  /** Review tab session length (persisted). */
+  reviewSessionSize: number;
 };
+
+export const REVIEW_SESSION_SIZE_OPTIONS = [5, 10, 15] as const;
+export type ReviewSessionSize = (typeof REVIEW_SESSION_SIZE_OPTIONS)[number];
+
+export function clampReviewSessionSize(value: number): ReviewSessionSize {
+  if (value <= 5) return 5;
+  if (value >= 15) return 15;
+  return 10;
+}
 
 export type HourlySlot = {
   hour: number;
@@ -27,6 +38,7 @@ export const DEFAULT_SCHEDULE: ScheduleSettings = {
   startHour: 9,
   endHour: 17,
   notificationsEnabled: false,
+  reviewSessionSize: 10,
 };
 
 export function formatHourLabel(hour: number): string {

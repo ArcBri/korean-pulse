@@ -21,6 +21,7 @@ import {
 } from "@/lib/persistence";
 import {
   buildDailyPlan,
+  clampReviewSessionSize,
   getCurrentSlotHour,
   getLocalDateKey,
   getNextSlotDate,
@@ -112,7 +113,11 @@ export function useLearnerState() {
 
   const updateSettings = useCallback((settings: Partial<ScheduleSettings>) => {
     updateLearnerState((prev) => {
-      const nextSettings = { ...prev.settings, ...settings };
+      const merged = { ...prev.settings, ...settings };
+      const nextSettings = {
+        ...merged,
+        reviewSessionSize: clampReviewSessionSize(merged.reviewSessionSize),
+      };
       return {
         ...prev,
         settings: nextSettings,
@@ -150,6 +155,22 @@ export function useLearnerState() {
     });
     // Keep due-count / countdown in sync with the rating timestamp.
     setNow(currentNow);
+  }, []);
+
+  const markWordHard = useCallback((wordId: string) => {
+    const currentNow = new Date();
+    updateLearnerState((prev) => {
+      const existing =
+        prev.progressById[wordId] ?? createInitialProgress(wordId, currentNow);
+      const { progress } = applyReviewRating(existing, "hard", currentNow);
+      return {
+        ...prev,
+        progressById: {
+          ...prev.progressById,
+          [wordId]: progress,
+        },
+      };
+    });
   }, []);
 
   const resetProgress = useCallback(() => {
@@ -199,6 +220,7 @@ export function useLearnerState() {
     now,
     updateSettings,
     rateCurrentWord,
+    markWordHard,
     resetProgress,
     ...derived,
   };
