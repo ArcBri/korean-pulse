@@ -1,12 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { WordCard } from "@/components/word-card";
 import { TodayQueue } from "@/components/today-queue";
+import { TypeCheckPanel } from "@/components/type-check-panel";
 import { Progress } from "@/components/ui/progress";
 import { useLearner } from "@/components/learner-provider";
 import { formatHourLabel } from "@/lib/schedule";
-import { getVocabularyById } from "@/lib/vocabulary";
+import {
+  getVocabularyById,
+  type VocabularyEntry,
+} from "@/lib/vocabulary";
+import type { ReviewRating } from "@/lib/review";
 
 function formatCountdown(target: Date | null, now: Date): string {
   if (!target) return "—";
@@ -34,6 +40,17 @@ export default function HomePage() {
     totalSlots,
     rateCurrentWord,
   } = useLearner();
+
+  const [typeCheckWord, setTypeCheckWord] = useState<VocabularyEntry | null>(
+    null,
+  );
+  const [typeCheckOpen, setTypeCheckOpen] = useState(false);
+
+  const handleRate = (word: VocabularyEntry, rating: ReviewRating) => {
+    rateCurrentWord(word.id, rating);
+    setTypeCheckWord(word);
+    setTypeCheckOpen(true);
+  };
 
   if (!hydrated || !state) {
     return (
@@ -99,7 +116,7 @@ export default function HomePage() {
           slotLabel={currentSlot.label}
           showActions
           progress={state.progressById[currentWord.id] ?? null}
-          onRate={(rating) => rateCurrentWord(currentWord.id, rating)}
+          onRate={(rating) => handleRate(currentWord, rating)}
           className="mb-10"
         />
       ) : (
@@ -126,7 +143,7 @@ export default function HomePage() {
               slotLabel={`Up next · ${previewSlot.label}`}
               showActions
               progress={state.progressById[previewWord.id] ?? null}
-              onRate={(rating) => rateCurrentWord(previewWord.id, rating)}
+              onRate={(rating) => handleRate(previewWord, rating)}
             />
           ) : null}
         </div>
@@ -136,6 +153,15 @@ export default function HomePage() {
         plan={state.dailyPlan}
         currentHour={currentHour}
         reviewedIds={state.reviewedToday}
+      />
+
+      <TypeCheckPanel
+        word={typeCheckWord}
+        open={typeCheckOpen}
+        onOpenChange={(open) => {
+          setTypeCheckOpen(open);
+          if (!open) setTypeCheckWord(null);
+        }}
       />
     </AppShell>
   );
