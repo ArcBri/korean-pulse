@@ -6,6 +6,7 @@ import {
 } from "@/lib/review";
 import {
   countEligibleReviewWords,
+  gradeReviewSession,
   selectReviewWordIds,
 } from "@/lib/review-session";
 
@@ -103,5 +104,16 @@ describe("Review miss applies hard", () => {
     ).progress;
     expect(afterMiss.lastRating).toBe("hard");
     expect(afterMiss.easeFactor).toBeLessThan(afterGood.easeFactor);
+  });
+});
+
+describe("gradeReviewSession", () => {
+  it("maps percent bands to letter grades", () => {
+    expect(gradeReviewSession(10, 10).label).toBe("A");
+    expect(gradeReviewSession(8, 10).label).toBe("B");
+    expect(gradeReviewSession(7, 10).label).toBe("C");
+    expect(gradeReviewSession(5, 10).label).toBe("D");
+    expect(gradeReviewSession(2, 10).label).toBe("F");
+    expect(gradeReviewSession(0, 0).label).toBe("—");
   });
 });

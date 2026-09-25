@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useLearner } from "@/components/learner-provider";
 import {
   countEligibleReviewWords,
+  gradeReviewSession,
   selectReviewWordIds,
 } from "@/lib/review-session";
 import {
@@ -41,6 +42,8 @@ export default function ReviewPage() {
     phase === "session" && queue[index]
       ? getVocabularyById(queue[index])
       : null;
+
+  const grade = gradeReviewSession(correctCount, queue.length);
 
   const startSession = () => {
     if (!state) return;
@@ -161,11 +164,8 @@ export default function ReviewPage() {
             <HangulTypeForm
               word={currentWord}
               resetKey={`${currentWord.id}-${advanceToken}`}
-              onCorrect={() => {
-                window.setTimeout(() => goNext(true), 700);
-              }}
               onMiss={() => markWordHard(currentWord.id)}
-              onSkip={() => goNext(false)}
+              onAdvance={(result) => goNext(result === "correct")}
             />
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function ReviewPage() {
             className="text-[color:var(--accent)] underline"
             onClick={() => goNext(false)}
           >
-            Skip
+            Next
           </button>
         </div>
       ) : null}
@@ -189,13 +189,17 @@ export default function ReviewPage() {
           <h2 className="font-display text-2xl text-[color:var(--ink)]">
             Session done
           </h2>
-          <p className="text-[color:var(--muted)]">
-            You typed{" "}
-            <span className="font-medium text-[color:var(--ink)]">
-              {correctCount}
-            </span>{" "}
-            of {queue.length} correctly.
-          </p>
+          <div className="flex items-end gap-4">
+            <p className="font-display text-5xl text-[color:var(--accent)]">
+              {grade.label}
+            </p>
+            <div className="pb-1">
+              <p className="text-lg text-[color:var(--ink)]">
+                {correctCount}/{queue.length} · {grade.percent}%
+              </p>
+              <p className="text-sm text-[color:var(--muted)]">{grade.detail}</p>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
